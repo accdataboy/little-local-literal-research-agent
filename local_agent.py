@@ -171,7 +171,7 @@ def run_tool(name: str, arguments: dict) -> str:
     elif name == "wiki_search":
         return wiki_search(arguments["query"])
     elif name == "scrape_links":
-        return wiki_search(arguments["url"])
+        return scrape_links(arguments["url"])
     elif name == "write_file":
         return write_file(arguments["filename"], arguments["content"])
     return f"Unknown tool: {name}"
