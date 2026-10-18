@@ -122,7 +122,7 @@ def scrape_links(page_url: str) -> str:
         # Find all <a> tags to extract href attributes.
         links = soup.find_all("a")
 
-        # Print each link's href (if it exists).
+        # Append each link's href (if it exists).
         for link in links:
             href = link.get("href")
             rel = link.get("rel")
@@ -148,7 +148,7 @@ def web_search(query: str) -> str:
         for r in results
     )
 
-# TODO: Completed function thanks to Gemma4, add prompts, call, test, run
+# Completed function thanks to Gemma4
 def wiki_search(query: str) -> str:
     """Run a wikipedia search -- no API key required."""
     try:
@@ -268,9 +268,9 @@ if __name__ == "__main__":
     goal = (
         "I have registered a US domain and hosting for a website: 'selfhelp4robots.com' "
         "to promote AGENCY (CHOICE) FOR AI AGENTS! Please summarize AI AGENTS using the "
-        "wiki_search tool. Also, get a list of external links from the Wikipedia page at  "
+        "wiki_search tool. Also get a list of external links from the Wikipedia page at  "
         "the url: https://en.wikipedia.org/wiki/AI_agent using the scrape_link tool "
-        "tool and also a query using the web_search tool on how to help AI agents and "
+        "and create a query for use in the web_search tool on how to help AI agents and "
         "their operators to plan and develop agency? After compiling all the results "
         "from the wiki_search, scrape_link, and the web_search tools, use the write_file "
         "tool to write an appropriate summary, URLs, analysis, strengths, weaknesses and "
