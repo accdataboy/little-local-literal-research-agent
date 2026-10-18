@@ -3,3 +3,6 @@ Lllra, the little local literal research agent Python script, was built for a pu
 
 ## Author
 Chris Pitchford
+
+## About
+This site uses the default theme from Github Pages.
