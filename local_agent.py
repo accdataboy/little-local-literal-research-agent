@@ -72,7 +72,7 @@ tools = [
                         "description": "Specific Wikipedia URL based on the results."
                     }
                 },
-                "required": ["query"]
+                "required": ["url"]
             }
         }
     },
