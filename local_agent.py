@@ -100,7 +100,7 @@ tools = [
 ]
 
 def scrape_links(page_url: str) -> str:
-    """Get external links from a Wikipedia page and print."""
+    """Get external links from a Wikipedia page and return them."""
     # Headers to mimic my browser
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -257,7 +257,7 @@ When the file is written by explicitly calling the write_file tool with the file
                     "content": "{result}"
                 })
 
-        # Model is done -- print and exit
+        # Agent is done -- print and exit
         if choice.finish_reason == "stop":
             print(f"\nAgent finished: {message.content}")
             return
