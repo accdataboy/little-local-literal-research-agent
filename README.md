@@ -1,7 +1,7 @@
 # L3RA, the Little local literal research agent
 L3RA, the little local literal research agent Python script, requires Ollama and a pre-pulled model.
 
-[![python](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square)](https://pypi.org/project/google-browser-scraper/)
+[![python](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square)](https://github.com/accdataboy/little-local-literal-research-agent)
 [![license](https://img.shields.io/pypi/l/google-browser-scraper?style=flat-square)](https://opensource.org/licenses/MIT)
 
 ## Author
