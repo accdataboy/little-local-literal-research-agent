@@ -5,4 +5,4 @@ L3RA, the little local literal research agent Python script, was built for a pur
 Chris Pitchford
 
 ## About
-This site uses the default theme from Github Pages.
+This site uses the default theme from [Github Pages](https://pages.github.com/).
