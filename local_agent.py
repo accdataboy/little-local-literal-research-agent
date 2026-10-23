@@ -1,6 +1,8 @@
 # local_agent.py, an agentic harness written entirely in Python, first inspired by KDNuggets
+# UPDATE: Now working with two models, thanks to Ollama, Gemma4, and Granite4!
 # Install: pip install openai ddgs wikipedia requests bs4
 # Requires: Ollama running locally at http://localhost:11434
+import time
 import requests
 from bs4 import BeautifulSoup
 from openai import OpenAI
@@ -12,10 +14,13 @@ import wikipedia
 # This is the one-line swap that makes any OpenAI-compatible tool work locally
 client = OpenAI(
     base_url="http://localhost:11434/v1",
-    api_key="ollama"  # Ollama does not require a real key -- this can be any string
+    api_key="ollama",  # Ollama does not require a real key -- this can be any string
+    timeout=900.0,  # Initial rec (300) failed for Granite but succeeded for Gemma4B
+    max_retries=0
 )
 
-MODEL = "gemma4:e4b"    # Change this to any pulled model
+#MODEL = "gemma4:e2b-it-qat"    # Change this to any pulled model
+MODEL = "granite4.2:3b"    # Change this to any pulled model
 
 # Define the tools the agent can call
 tools = [
@@ -165,16 +170,24 @@ def write_file(filename: str, content: str) -> str:
     return f"File '{filename}' written successfully ({len(content)} characters)."
 
 def run_tool(name: str, arguments: dict) -> str:
-    """Route tool calls to the correct function."""
-    if name == "web_search":
-        return web_search(arguments["query"])
-    elif name == "wiki_search":
-        return wiki_search(arguments["query"])
-    elif name == "scrape_links":
-        return scrape_links(arguments["url"])
-    elif name == "write_file":
-        return write_file(arguments["filename"], arguments["content"])
-    return f"Unknown tool: {name}"
+    """Route tool calls to the correct function, adding try/except blocks for robustness."""
+    try:
+        if name == "web_search":
+            return web_search(arguments["query"])
+        elif name == "wiki_search":
+            return wiki_search(arguments["query"])
+        elif name == "scrape_links":
+            return scrape_links(arguments["url"])
+        elif name == "write_file":
+            return write_file(arguments["filename"], arguments["content"])
+        else:
+            return f"Unknown tool: {name}"
+    except KeyError as e:
+        # Catches missing keys in the arguments dictionary
+        return f"Error: Missing required argument {e.__class__.__name__} for tool '{name}'. Check tool requirements and re-attempt."
+    except Exception as e:
+        # Catches any other unexpected runtime exceptions
+        return f"Tool execution error in '{name}': An unexpected error occurred: {e.__class__.__name__}: {e} --Check tool requirements and re-attempt."
 
 def run_agent(goal: str, max_turns: int = 10) -> None:
     """
@@ -187,7 +200,7 @@ def run_agent(goal: str, max_turns: int = 10) -> None:
 
     system = """You are a research agent within a local and limited environment that has
 successfully demonstrated observation, orientation, and decision capabilities and 
-can also take actions.
+can also take actions, such as running one tool per turn.
 
 When given a goal:
 
@@ -210,13 +223,31 @@ When the file is written by explicitly calling the write_file tool with the file
     for turn in range(max_turns):
         print(f"\n--- Turn {turn + 1} ---")
 
+        # Sometimes, one effort isn't enough for Granite4.2 vs. Gemma4
         # Send conversation to the local model
-        response = client.chat.completions.create(
-            model=MODEL,
-            messages=[{"role": "system", "content": system}] + messages,
-            tools=tools,
-            tool_choice="auto"
-        )
+        for attempt in range(1, 5):
+            try:
+                response = client.chat.completions.create(
+                    model=MODEL,
+                    messages=[{"role": "system", "content": system}] + messages,
+                    tools=tools,
+                    tool_choice="auto",
+                )
+                break
+            except Exception as exc:
+                if attempt == 4:
+                    print(
+                        f"Request failed after {attempt} attempts: "
+                        f"{type(exc).__name__}: {exc}"
+                    )
+                    return
+
+                delay = 2 ** attempt
+                print(
+                    f"Request failed ({type(exc).__name__}); "
+                    f"retrying in {delay}s (attempt {attempt + 1}/4)..."
+                )
+                time.sleep(delay)
 
         choice = response.choices[0]
         message = choice.message
@@ -242,10 +273,32 @@ When the file is written by explicitly calling the write_file tool with the file
             })
 
             # Execute each tool call and add results to conversation
+            # Added exception handlers for Granite4.2
             for tool_call in message.tool_calls:
                 name = tool_call.function.name
-                args = json.loads(tool_call.function.arguments)
+                try:
+                    # Attempt to load arguments from JSON
+                    args = json.loads(tool_call.function.arguments)
+                except json.JSONDecodeError as e:
+                    # Handle malformed JSON arguments
+                    print(f"Warning: Failed to decode JSON arguments for tool '{name}'. Invalid JSON provided by the model. Details: {e}")
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": f"Error: Failed to decode JSON arguments for tool '{name}'. Invalid JSON provided by the model. Details: {e}"
+                    })
+                    continue  # Skip to the next tool call
+                except Exception as e:
+                    # Handle other unexpected exceptions during parsing
+                    print(f"Warning: Unexpected error during argument parsing for tool '{name}'. Error: {e}")
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": f"Error: Unexpected error while parsing arguments for tool '{name}'. Details: {e}"
+                    })
+                    continue # Skip to the next tool call
 
+                # If successful, proceed with tool execution
                 print(f"Tool: {name}({args})")
                 result = run_tool(name, args)
                 print(f"Result preview: {result[:120]}...")
@@ -254,7 +307,7 @@ When the file is written by explicitly calling the write_file tool with the file
                 messages.append({
                     "role": "tool",
                     "tool_call_id": tool_call.id,
-                    "content": "{result}"
+                    "content": f"{result}"
                 })
 
         # Agent is done -- print and exit
@@ -274,7 +327,7 @@ if __name__ == "__main__":
         "their operators to plan and develop agency? After compiling all the results "
         "from the wiki_search, scrape_link, and the web_search tools, use the write_file "
         "tool to write an appropriate summary, URLs, analysis, strengths, weaknesses and "
-        "suggested next steps for each result to a file named `gemma-results.md`."
+        "suggested next steps for each result to a file named `gemma4-2eb-results.md`."
     )
     print(f"Goal: {goal}\n")
     run_agent(goal)
