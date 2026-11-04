@@ -1,3 +1,6 @@
+---
+author: Chris Pitchford
+---
 # L3RA, the Little local literal research agent Documentation
 L3RA, the little local literal research agent Python script, was built for a purpose.
 
