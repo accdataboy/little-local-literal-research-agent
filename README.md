@@ -1,5 +1,6 @@
 ---
 title: L3RA
+permalink: /index.html
 ---
 # L3RA, the Little local literal research agent Documentation
 L3RA, the little local literal research agent Python script, was built for a purpose.
@@ -8,4 +9,4 @@ L3RA, the little local literal research agent Python script, was built for a pur
 Chris Pitchford
 
 ## About
-This site uses the Default theme from [Github Pages](https://pages.github.com/).
+This site uses the Midnight theme from [Github Pages](https://pages.github.com/).
